@@ -5,15 +5,16 @@
 
 namespace HTTP_ANSWERS
 {
-	const std::string not_found("HTTP/1.0 404 Not Found\r\nContent-length: 0\r\nContent-Type: text/html\r\n\r\n");
+	const std::string notFound("HTTP/1.0 404 Not Found\r\nContent-length: 0\r\nContent-Type: text/html\r\n\r\n");
 	const std::string ok("HTTP/1.0 200 OK\r\n");
 };
 
-struct server_options
+struct ServerOptions
 {
-	server_options(const std::string& ip, const std::uint32_t port, const std::string& path) :IP(ip), Port(port), Path(path)
+	ServerOptions(const std::string& ip, const std::uint32_t port, const std::string& path) : IP(ip), Port(port), Path(path)
 	{
 	}
+
 	std::string IP;
 	std::uint32_t Port;
 	std::string Path;
@@ -22,7 +23,7 @@ struct server_options
 class Parser
 {
 public:
-	std::unique_ptr<server_options> CheckCMDParametrs(int getc, char** getv)
+	std::unique_ptr<ServerOptions> CheckCMDParametrs(int getc, char** getv)
 	{
 		namespace po = boost::program_options;
 		po::options_description desc("Options");
@@ -41,12 +42,13 @@ public:
 			if (!boost::regex_match(vm["ip"].as<std::string>(), res, rgx) || vm["port"].as<uint32_t>() > 65535)
 				return nullptr;
 
-			return std::unique_ptr<server_options>(new server_options(vm["ip"].as<std::string>(), vm["port"].as<uint32_t>(), vm["directory"].as<std::string>()));
+			return std::unique_ptr<ServerOptions>(new ServerOptions(vm["ip"].as<std::string>(), vm["port"].as<uint32_t>(), vm["directory"].as<std::string>()));
 		}
 		else
 			return nullptr;
 
 	}
+
 	std::string Get(const std::string& request, const std::string& dir)
 	{
 		boost::regex rgx("^(GET) ([a-zA-Z\\/\\.]+)", boost::regex_constants::ECMAScript);
@@ -56,7 +58,7 @@ public:
 		std::ifstream file(absPath.c_str());
 		
 		if (!file.is_open())
-			return std::string(HTTP_ANSWERS::not_found);
+			return std::string(HTTP_ANSWERS::notFound);
 		else 
 		{
 			std::string content;

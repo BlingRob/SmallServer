@@ -1,19 +1,19 @@
-#include "parser.h"
+#include "cmd_interpreter.h"
 #include "server.h"
 
 #include <unistd.h>
 #include <iostream>
 
-int main(int getc,char** getv)
+int main(int getc, char** getv)
 {
 	//getopt thread
-        daemon(0, 0);
+    //    daemon(0, 0);
 
-	Parser prs;
+	CmdInterpreter inter;
 	
 	try
 	{
-		std::unique_ptr<ServerOptions> SrvOpt = prs.CheckCMDParametrs(getc, getv);
+		std::unique_ptr<ServerOptions> SrvOpt = inter.CheckCMDParametrs(getc, getv);
 		Server serv(std::move(SrvOpt));
 		serv.Run();
 	}

@@ -1,6 +1,6 @@
 #pragma once
 #include "client_request.h"
-#include "parser.h"
+#include "server_configure.h"
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>

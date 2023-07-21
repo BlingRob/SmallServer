@@ -1,8 +1,8 @@
-#include "Headers.h"
-#include "Parser.h"
-#include "Server.h"
-#include <unistd.h>
+#include "parser.h"
+#include "server.h"
 
+#include <unistd.h>
+#include <iostream>
 
 int main(int getc,char** getv)
 {

@@ -1,4 +1,6 @@
-#include "Server.h"
+#include "server.h"
+
+#include <boost/bind.hpp>
 
 Server::Server(std::unique_ptr<ServerOptions> data) 
 {

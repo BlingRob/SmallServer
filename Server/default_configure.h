@@ -12,4 +12,6 @@ uint32_t Port = 15000;
 
 std::string Directory = "./";
 
+bool AsConsole = false;
+
 } // namespace default_configures

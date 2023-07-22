@@ -15,6 +15,11 @@ void Server::Run()
 	service_.run();
 }
 
+void Server::Stop()
+{
+	service_.stop();
+}
+
 void Server::startAccept(ClientRequest* req)
 {
 	acc_->async_accept(req->Socket(), boost::bind(&Server::handleAccept, this, req, _1));

@@ -10,7 +10,10 @@ class Server
 	public:
 
 		Server(std::unique_ptr<ServerOptions>);
+
 		void Run();
+
+		void Stop();
 
 	private:
 

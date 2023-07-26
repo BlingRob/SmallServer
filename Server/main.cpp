@@ -3,8 +3,24 @@
 #include "server_console_commander.h"
 
 #include <unistd.h>
+#include <signal.h>
+
 #include <iostream>
 #include <thread>
+#include <memory>
+
+std::shared_ptr<Server> Serv;
+
+void SigHandler(int signum)
+{
+  	if(signum == SIGKILL)
+  	{
+		Serv->Stop();
+		std::cin.putback('q');
+		std::cout << "Killed" << std::endl;
+	}
+}
+
 
 int main(int getc, char** getv)
 {
@@ -14,17 +30,18 @@ int main(int getc, char** getv)
 	{
 		std::unique_ptr<ServerOptions> srvOpt = inter.CheckCMDParametrs(getc, getv);
 		bool asConsole = srvOpt->asConsoleApp_;
-		Server serv(std::move(srvOpt));
+		Serv = std::make_shared<Server>(std::move(srvOpt));
 		if(asConsole)
 		{
-			std::jthread serverThread([&](){serv.Run();});
-			ServerConsoleCommander commander(serv);
+			std::jthread serverThread([&](){Serv->Run();});
+			ServerConsoleCommander commander(*Serv);
 			commander.CommandLoop();
 		}
 		else 
 		{
+			signal(SIGKILL, SigHandler);
 			daemon(0, 0);
-			serv.Run();
+			Serv->Run();
 		}
 		
 	}

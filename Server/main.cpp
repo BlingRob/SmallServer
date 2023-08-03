@@ -1,6 +1,7 @@
 #include "cmd_interpreter.h"
 #include "server.h"
 #include "server_console_commander.h"
+#include "logger.h"
 
 #include <unistd.h>
 #include <signal.h>
@@ -24,6 +25,8 @@ void SigHandler(int signum)
 
 int main(int getc, char** getv)
 {
+	InitLogger();
+
 	CmdInterpreter inter;
 	
 	try
@@ -33,6 +36,7 @@ int main(int getc, char** getv)
 		Serv = std::make_shared<Server>(std::move(srvOpt));
 		if(asConsole)
 		{
+			BOOST_LOG_TRIVIAL(info) << "Start work server";
 			std::jthread serverThread([&](){Serv->Run();});
 			ServerConsoleCommander commander(*Serv);
 			commander.CommandLoop();

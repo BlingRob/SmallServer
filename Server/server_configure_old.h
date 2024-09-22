@@ -5,7 +5,10 @@
 struct ServerOptions
 {
 	ServerOptions(const std::string& ip, const std::uint32_t port, const std::string& path, bool asConsole) : 
-                  ip_(ip), port_(port), path_(path), asConsoleApp_(asConsole)
+                  ip_(ip), 
+				  port_(port), 
+				  path_(path), 
+				  asConsoleApp_(asConsole)
 	{
 	}
 

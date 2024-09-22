@@ -50,7 +50,7 @@ std::unique_ptr<ServerOptions> CmdInterpreter::fromConfigureFile(const boost::pr
     std::string directory = (pt.count("directory") == 0) ? default_configures::Directory : pt.get<std::string>("directory");
     bool asConsole = (pt.count("console") == 0) ? default_configures::AsConsole : pt.get<bool>("console");
 
-    return std::unique_ptr<ServerOptions>(new ServerOptions(ip, port, directory, asConsole));
+    return std::make_unique<ServerOptions>(ip, port, directory, asConsole);
 
 }
 
@@ -67,10 +67,11 @@ std::unique_ptr<ServerOptions> CmdInterpreter::fromArgs(const boost::program_opt
     if (!boost::regex_match(ip, res, rgx) || port > 65535)
         return getDefault();
 
-    return std::unique_ptr<ServerOptions>(new ServerOptions(ip, port, directory, asConsole));
+    return std::make_unique<ServerOptions>(ip, port, directory, asConsole);
 }
 
 std::unique_ptr<ServerOptions> CmdInterpreter::getDefault()
 {
-    return std::unique_ptr<ServerOptions>(new ServerOptions(default_configures::IP, default_configures::Port, default_configures::Directory, default_configures::AsConsole));
+    using namespace default_configures;
+    return std::make_unique<ServerOptions>(IP, Port, Directory, AsConsole);
 }

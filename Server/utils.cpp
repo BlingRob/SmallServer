@@ -1,6 +1,10 @@
+/// \file utils.cpp
+/// \brief Useful function's implementation
+
 #include "utils.h"
 
-#include "fstream"
+#include <fstream>
+#include <format>
 
 std::string LoadTextFile(std::string_view path)
 {
@@ -14,8 +18,7 @@ std::string LoadTextFile(std::string_view path)
         }
     catch (const std::exception& exc)
         {
-            throw(std::string(exc.what()) + "\n File:" + std::string(path) +
-                  " doesn't exist!");
+            throw(std::format("{}\nFile: {} doesn't exist!", exc.what(), path));
         }
 
     if (!file.is_open())

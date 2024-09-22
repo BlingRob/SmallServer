@@ -36,11 +36,11 @@ void ClientRequest::handleRead(const boost::system::error_code& error,
     }
     else
     {
-        delete this;
+       delete this;
     }
 }
 
 void ClientRequest::handleWrite(const boost::system::error_code& error)
 {
-    delete this;
+   delete this;
 }

@@ -6,7 +6,7 @@ class CompressorRecipe(ConanFile):
     generators = "CMakeToolchain", "CMakeDeps"
 
     def requirements(self):
-        self.requires("boost/1.82.0")
+        self.requires("boost/1.85.0")
 
 #    def build_requirements(self):
 #        self.tool_requires("cmake/3.25.1")        

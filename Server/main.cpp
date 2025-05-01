@@ -1,32 +1,42 @@
-// #include "cmd_interpreter.h"
-// #include "server.h"
-// #include "server_console_commander.h"
-// #include "logger.h"
 
-#if !defined(WIN32) || !defined(_WIN32) || !defined(__WIN32) && !defined(__CYGWIN__)
-//#include <unistd.h>
-#endif
+#include "http_server/server.h"
+#include "server_interface.h"
+#include "default_configure.h"
 
-// #include <signal.h>
-
-#include "base_server_impl.h"
+#include <boost/asio/signal_set.hpp>
 
 #include <iostream>
-#include <thread>
-#include <memory>
 
-// std::shared_ptr<Server> Serv;
+class Server : public IServer, public HttpServer
+{
+	public:
 
-// void SigHandler(int signum)
-// {
-//   	if(signum == SIGKILL)
-//   	{
-// 		Serv->Stop();
-// 		std::cin.putback('q');
-// 		std::cout << "Killed" << std::endl;
-// 	}
-// }
+	Server(const ServerParameters& params, boost::asio::io_context& ioc)
+		  : ioc_(ioc)
+		  , sig_set_(ioc, SIGINT, SIGTERM)
+		  /// THis start first
+		  ,	HttpServer(params, ioc)
+	{
+		sig_set_.async_wait([this](auto, auto){ ioc_.stop(); });
+	}
 
+	void Start() override
+	{
+		ioc_.run();
+	}
+
+	void Stop() override
+	{
+
+	}
+
+	private:
+
+	boost::asio::io_context& ioc_;
+
+	boost::asio::signal_set sig_set_;
+
+};
 
 int main(int getc, char** getv)
 {
@@ -36,11 +46,14 @@ int main(int getc, char** getv)
 	
 	try
 	{
-		std::unique_ptr<BaseServerImpl> Serv;
-		ServerParametrs serverParametrs{"127.0.0.1", 15000, "./"};
-		Serv = std::make_unique<BaseServerImpl>(serverParametrs);
-		std::jthread serverThread([&](){Serv->Start();});
-		std::cerr << "Finished" << std::endl;
+		boost::asio::io_context ioc;
+		Server serv{{default_configures::IP, default_configures::Port}, ioc};
+		serv.Start();
+		// std::unique_ptr<BaseServerImpl> Serv;
+		// ServerParameters ServerParameters{"127.0.0.1", 15000, "./"};
+		// Serv = std::make_unique<BaseServerImpl>(ServerParameters);
+		// std::jthread serverThread([&](){Serv->Start();});
+		// std::cerr << "Finished" << std::endl;
 	}
 		// std::unique_ptr<ServerOptions> srvOpt = inter.CheckCMDParametrs(getc, getv);
 		// bool asConsole = srvOpt->asConsoleApp_;

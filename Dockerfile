@@ -20,6 +20,3 @@ RUN mkdir -p build
 #RUN echo "tools.system.package_manager:mode=install" > /root/.conan2/global.conf
 RUN conan install . --build=missing -of build -pr:a .conan/profiles/linux_clang
 RUN conan build . --build=missing -of build -pr:a .conan/profiles/linux_clang
-
-#ENTRYPOINT ["./start_server.sh"]
-#CMD ["firefox", "\":99.0+0,0 10 1280 720 :99.0\"", "0"]

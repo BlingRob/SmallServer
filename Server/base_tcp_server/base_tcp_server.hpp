@@ -90,12 +90,17 @@ class BaseTCPServer: std::enable_shared_from_this<BaseTCPServer>
             //     //co_await boost::asio::async_write(socket, boost::asio::buffer(read_msg, n), boost::asio::use_awaitable);
             // }
 
-            std::size_t n = co_await boost::asio::async_read_until(socket, stream, '\n', boost::asio::use_awaitable);
-            is >> str;
-            os << co_await co_client_request(std::move(str));
+            std::size_t n = co_await boost::asio::async_read_until(socket, stream, "\r\n\r\n", boost::asio::use_awaitable);
+            str.resize(n);
+            is.read(str.data(), n);
+            stream.commit(n);
+            str = co_await co_client_request(std::move(str));
+            // os << co_await co_client_request(std::move(str));
+            os.write(str.data(), str.size());
+            
             co_await async_write(socket, stream);
         }
-        catch (std::exception& e)
+        catch (const std::exception& e)
         {
             /// @todo need logging
             // std::printf("echo Exception: %s\n", e.what());

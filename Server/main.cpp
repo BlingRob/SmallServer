@@ -2,6 +2,7 @@
 #include "http_server/server.h"
 #include "server_interface.h"
 #include "default_configure.h"
+#include "logger_subsystem/boost_logger_impl.h"
 
 #include <boost/asio/signal_set.hpp>
 
@@ -11,12 +12,13 @@ class Server : public IServer, public HttpServer
 {
 	public:
 
-	Server(const ServerParameters& params, boost::asio::io_context& ioc)
+	Server(const ServerParameters& params, boost::asio::io_context& ioc, std::shared_ptr<ILogger> logger)
 		  : ioc_(ioc)
 		  , sig_set_(ioc, SIGINT, SIGTERM)
 		  /// THis start first
 		  ,	HttpServer(params, ioc)
 	{
+		logger->Log("Server " + params.host_ + ":" + std::to_string(params.port_) +  " started", Severities::Info);
 		sig_set_.async_wait([this](auto, auto){ ioc_.stop(); });
 	}
 
@@ -47,7 +49,7 @@ int main(int getc, char** getv)
 	try
 	{
 		boost::asio::io_context ioc;
-		Server serv{{default_configures::IP, default_configures::Port}, ioc};
+		Server serv{{default_configures::IP, default_configures::Port}, ioc, std::make_shared<BoostLogger>()};
 		serv.Start();
 		// std::unique_ptr<BaseServerImpl> Serv;
 		// ServerParameters ServerParameters{"127.0.0.1", 15000, "./"};

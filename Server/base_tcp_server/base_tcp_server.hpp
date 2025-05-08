@@ -1,6 +1,6 @@
 #pragma once
 
-#include <logger_subsystem/logger.h>
+#include <logger_subsystem/logger_interface.h>
 #include <server_parameters.h>
 
 #include <boost/asio/co_spawn.hpp>
@@ -12,9 +12,7 @@
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/streambuf.hpp>
 
-#include <cstdio>
 #include <string>
-#include <functional>
 #include <memory>
 
 using tcp_acceptor = boost::asio::use_awaitable_t<>::as_default_on_t<boost::asio::ip::tcp::acceptor>;
@@ -67,28 +65,10 @@ class BaseTCPServer: std::enable_shared_from_this<BaseTCPServer>
             std::ostream os(&stream);
             std::string str;
             /// @todo made different read politices
-            //   std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data));
-            //   co_await async_write(socket, boost::asio::buffer(data, n));
-
             // char data[1024];
-            // for (std::string read_msg;;)
-            // {
-            //     //std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data), boost::asio::use_awaitable);
-            //     std::size_t n = co_await boost::asio::async_read_until(socket,
-            //         boost::asio::dynamic_buffer(read_msg, 1024), "\n", boost::asio::use_awaitable);
-            //     // std::printf("Read bytes: %d\n", n);
-            //     // std::printf("Read: %s\n", read_msg.c_str());
-            //     // if(read_msg.find("HTTP"))
-            //     // {
-            //     //     //n = co_await socket.async_read_some(boost::asio::buffer(data), boost::asio::use_awaitable);
-            //     //     
-            //     //     co_await boost::asio::async_write(socket, boost::asio::buffer(answer, answer.size()), boost::asio::use_awaitable);
-            //     //     break;
-            //     // }
-            //     read_msg.erase(0, n);
-            //     // std::size_t n = co_await boost::asio::async_read_until(socket, boost::asio::buffer(data), '\n',  boost::asio::use_awaitable);
-            //     //co_await boost::asio::async_write(socket, boost::asio::buffer(read_msg, n), boost::asio::use_awaitable);
-            // }
+            // boost::asio::dynamic_buffer(read_msg, 1024)
+            // std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data), boost::asio::use_awaitable); 
+            // co_await async_write(socket, boost::asio::buffer(data, n));
 
             std::size_t n = co_await boost::asio::async_read_until(socket, stream, "\r\n\r\n", boost::asio::use_awaitable);
             str.resize(n);
@@ -96,7 +76,6 @@ class BaseTCPServer: std::enable_shared_from_this<BaseTCPServer>
             stream.commit(n);
             stream.consume(n);
             str = co_await co_client_request(std::move(str));
-            // os << co_await co_client_request(std::move(str));
             os.write(str.data(), str.size());
             
             co_await boost::asio::async_write(socket, stream, boost::asio::use_awaitable);

@@ -11,7 +11,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/Defaults/default.conf DESTINATION ${CMAKE_CURRENT_
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CPP_FILES main.cpp http_server/server.cpp utils.cpp)
+set(CPP_FILES main.cpp http_server/server.cpp utils.cpp logger_subsystem/boost_logger_impl.cpp)
 
 add_executable (${PROJECT_NAME} ${CPP_FILES})
 

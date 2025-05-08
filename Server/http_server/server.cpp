@@ -51,7 +51,7 @@ std::string HttpServer::user_handler(std::string request)
         {
             res.version(11);
             res.result(http::status::ok);
-            std::string file = LoadTextFile("./index.html");
+            std::string file = utils::LoadTextFile("./index.html");
             res.set(http::field::content_type, "text/html");
             res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
             // res.content_length(file.size());

@@ -55,10 +55,25 @@ void BoostLogger::SetSeverities(Severities sev)
 
 void BoostLogger::Log(std::string_view msg, Severities sev)
 {
-    BOOST_LOG_TRIVIAL(trace) << msg;
-    // BOOST_LOG_TRIVIAL(debug) << "This is a debug severity message";
-    // BOOST_LOG_TRIVIAL(info) << "This is an informational severity message";
-    // BOOST_LOG_TRIVIAL(warning) << "This is a warning severity message";
-    // BOOST_LOG_TRIVIAL(error) << "This is an error severity message";
-    // BOOST_LOG_TRIVIAL(fatal) << "and this is a fatal severity message";
+    switch (sev)
+    {
+    case Severities::Trace:
+        BOOST_LOG_TRIVIAL(trace) << msg;
+        break;
+    case Severities::Debug:
+        BOOST_LOG_TRIVIAL(debug) << msg;
+        break;
+    case Severities::Info:
+        BOOST_LOG_TRIVIAL(info) << msg;
+        break;
+    case Severities::Warning:
+        BOOST_LOG_TRIVIAL(warning) << msg;
+        break;
+    case Severities::Error:
+        BOOST_LOG_TRIVIAL(error) << msg;
+        break;
+    case Severities::Fatal:
+    default:
+        BOOST_LOG_TRIVIAL(fatal) << msg;
+    }
 }

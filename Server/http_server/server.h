@@ -3,6 +3,7 @@
 #include <server_parameters.h>
 #include <server_interface.h>
 #include <base_tcp_server/base_tcp_server.hpp>
+#include <logger_subsystem/logger_interface.h>
 
 #include <boost/beast/http.hpp>
 #include <boost/beast/core.hpp>
@@ -12,7 +13,7 @@
 class HttpServer : public BaseTCPServer
 {
 	public:
-		HttpServer(const ServerParameters& parameters, boost::asio::io_context& ioc);
+		HttpServer(boost::asio::io_context& ioc, const ServerParameters& parameters, ILogger& logger);
 
 	private:
 		

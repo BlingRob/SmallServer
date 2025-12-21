@@ -6,33 +6,43 @@
 
 #include <boost/asio/signal_set.hpp>
 
+#include <format>
+
 #include <iostream>
 
 class Server : public IServer, public HttpServer
 {
 	public:
 
-	Server(const ServerParameters& params, boost::asio::io_context& ioc, std::shared_ptr<ILogger> logger)
-		  : ioc_(ioc)
+	Server(boost::asio::io_context& ioc, const ServerParameters& params, std::shared_ptr<ILogger> logger)
+		  : logger_(std::move(logger))
+		  , ioc_(ioc)
 		  , sig_set_(ioc, SIGINT, SIGTERM)
 		  /// THis start first
-		  ,	HttpServer(params, ioc)
+		  ,	HttpServer(ioc, params, *logger)
 	{
-		logger->Log("Server " + params.host_ + ":" + std::to_string(params.port_) +  " started", Severities::Info);
+		logger_->Log(std::format("Server {}:{} created", params.host_, params.port_), Severities::Info);
+
 		sig_set_.async_wait([this](auto, auto){ ioc_.stop(); });
 	}
 
 	void Start() override
 	{
+		logger_->Log("Server started", Severities::Info);
+
 		ioc_.run();
 	}
 
 	void Stop() override
 	{
+		logger_->Log("Server stopped", Severities::Info);
 
+		ioc_.stop();
 	}
 
 	private:
+
+	std::shared_ptr<ILogger> logger_;
 
 	boost::asio::io_context& ioc_;
 
@@ -49,7 +59,7 @@ int main(int getc, char** getv)
 	try
 	{
 		boost::asio::io_context ioc;
-		Server serv{{default_configures::IP, default_configures::Port}, ioc, std::make_shared<BoostLogger>()};
+		Server serv{ioc, {default_configures::IP, default_configures::Port}, std::make_shared<BoostLogger>()};
 		serv.Start();
 		// std::unique_ptr<BaseServerImpl> Serv;
 		// ServerParameters ServerParameters{"127.0.0.1", 15000, "./"};

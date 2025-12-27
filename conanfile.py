@@ -7,6 +7,7 @@ class CompressorRecipe(ConanFile):
 
     def requirements(self):
         self.requires("boost/1.85.0")
+        self.requires("tomlplusplus/3.4.0")
 
 #    def build_requirements(self):
 #        self.tool_requires("cmake/3.25.1")        

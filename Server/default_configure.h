@@ -1,17 +1,21 @@
 #pragma once
 
-#include <string>
 #include <cinttypes>
+#include <string>
 
 namespace default_configures
 {
 
-std::string IP = "127.0.0.1";
+const std::string kHost{"127.0.0.1"};
 
-uint16_t Port = 15000;
+const std::uint16_t kHttpPort{15000};
 
-std::string Directory = "./";
+const std::uint16_t kFtpPort{15001};
 
-bool AsConsole = false;
+const std::string kHttpWorkDir = "./";
 
-} // namespace default_configures
+const std::string kFtpWorkDir = "./";
+
+const bool kAsConsole{false};
+
+}  // namespace default_configures

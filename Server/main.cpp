@@ -1,104 +1,113 @@
 
-#include "http_server/server.h"
-#include "server_interface.h"
-#include "default_configure.h"
-#include "logger_subsystem/boost_logger_impl.h"
-
 #include <boost/asio/signal_set.hpp>
-
+#include <filesystem>
 #include <format>
-
 #include <iostream>
+#include <toml.hpp>
 
-class Server : public IServer, public HttpServer
+#include "default_configure.h"
+#include "ftp_server/server.h"
+#include "ftp_server/web_gui_server.h"
+#include "logger_subsystem/boost_logger_impl.h"
+#include "server_interface.h"
+
+class Server : public IServer
 {
-	public:
+   public:
+    Server(boost::asio::io_context& ioc, const toml::table& cfg, std::shared_ptr<ILogger> logger)
+        : logger_(std::move(logger)),
+          ioc_(ioc),
+          sig_set_(ioc, SIGINT, SIGTERM),
+          ftp_server_(ioc, cfg, *logger_),
+          web_gui_ftp_server_(ioc, cfg, *logger_)
+    {
+        logger_->Log("Main server created", Severities::Info);
 
-	Server(boost::asio::io_context& ioc, const ServerParameters& params, std::shared_ptr<ILogger> logger)
-		  : logger_(std::move(logger))
-		  , ioc_(ioc)
-		  , sig_set_(ioc, SIGINT, SIGTERM)
-		  /// THis start first
-		  ,	HttpServer(ioc, params, *logger)
-	{
-		logger_->Log(std::format("Server {}:{} created", params.host_, params.port_), Severities::Info);
+        sig_set_.async_wait([this](auto, auto) { ioc_.stop(); });
+    }
 
-		sig_set_.async_wait([this](auto, auto){ ioc_.stop(); });
-	}
+    void Start() override
+    {
+        logger_->Log("Server started", Severities::Info);
 
-	void Start() override
-	{
-		logger_->Log("Server started", Severities::Info);
+        ioc_.run();
+    }
 
-		ioc_.run();
-	}
+    void Stop() override
+    {
+        logger_->Log("Server stopped", Severities::Info);
 
-	void Stop() override
-	{
-		logger_->Log("Server stopped", Severities::Info);
+        ioc_.stop();
+    }
 
-		ioc_.stop();
-	}
+   private:
+    std::shared_ptr<ILogger> logger_;
 
-	private:
+    boost::asio::io_context& ioc_;
 
-	std::shared_ptr<ILogger> logger_;
+    boost::asio::signal_set sig_set_;
 
-	boost::asio::io_context& ioc_;
+    FTPServer ftp_server_;
 
-	boost::asio::signal_set sig_set_;
-
+    WebGuiFtpServer web_gui_ftp_server_;
 };
 
 int main(int getc, char** getv)
 {
-	//InitLogger();
+    toml::table cfg;
 
-	// CmdInterpreter inter;
-	
-	try
-	{
-		boost::asio::io_context ioc;
-		Server serv{ioc, {default_configures::IP, default_configures::Port}, std::make_shared<BoostLogger>()};
-		serv.Start();
-		// std::unique_ptr<BaseServerImpl> Serv;
-		// ServerParameters ServerParameters{"127.0.0.1", 15000, "./"};
-		// Serv = std::make_unique<BaseServerImpl>(ServerParameters);
-		// std::jthread serverThread([&](){Serv->Start();});
-		// std::cerr << "Finished" << std::endl;
-	}
-		// std::unique_ptr<ServerOptions> srvOpt = inter.CheckCMDParametrs(getc, getv);
-		// bool asConsole = srvOpt->asConsoleApp_;
-		// Serv = std::make_shared<Server>(std::move(srvOpt));
+    const std::string config_file_path{"cfg.toml"};
 
-	// #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-	// 	asConsole = true;
-	// #endif
+    if (!std::filesystem::exists(config_file_path))
+    {
+        throw std::runtime_error("Config file not found: " + config_file_path);
+    }
 
-	// 	if(asConsole)
-	// 	{
-	// 		//BOOST_LOG_TRIVIAL(info) << "Start work server";
-			
-	// 		//ServerConsoleCommander commander(*Serv);
-	// 		//commander.CommandLoop();
-	// 		if(serverThread.joinable())
-	// 		{
-	// 			serverThread.join();
-	// 		}
-	// 	}
-	// 	#if !defined(WIN32) || !defined(_WIN32) || !defined(__WIN32) && !defined(__CYGWIN__)
-	// 	else 
-	// 	{
-	// 		//signal(SIGKILL, SigHandler);
-	// 		//daemon(0, 0);
-	// 		Serv->Run();
-	// 	}
-	// 	#endif
-	// }
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
-	}
+    cfg = toml::parse_file(config_file_path);
 
-	return 0;
+    // CmdInterpreter inter;
+
+    try
+    {
+        boost::asio::io_context ioc;
+        Server serv{ioc, cfg, std::make_shared<BoostLogger>()};
+        serv.Start();
+        // std::unique_ptr<BaseServerImpl> Serv;
+        // std::jthread serverThread([&](){Serv->Start();});
+        // std::cerr << "Finished" << std::endl;
+    }
+    // std::unique_ptr<ServerOptions> srvOpt = inter.CheckCMDParametrs(getc, getv);
+    // bool asConsole = srvOpt->asConsoleApp_;
+    // Serv = std::make_shared<Server>(std::move(srvOpt));
+
+    // #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+    // 	asConsole = true;
+    // #endif
+
+    // 	if(asConsole)
+    // 	{
+    // 		//BOOST_LOG_TRIVIAL(info) << "Start work server";
+
+    // 		//ServerConsoleCommander commander(*Serv);
+    // 		//commander.CommandLoop();
+    // 		if(serverThread.joinable())
+    // 		{
+    // 			serverThread.join();
+    // 		}
+    // 	}
+    // 	#if !defined(WIN32) || !defined(_WIN32) || !defined(__WIN32) && !defined(__CYGWIN__)
+    // 	else
+    // 	{
+    // 		//signal(SIGKILL, SigHandler);
+    // 		//daemon(0, 0);
+    // 		Serv->Run();
+    // 	}
+    // 	#endif
+    // }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
+
+    return 0;
 }

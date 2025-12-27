@@ -15,7 +15,6 @@ constexpr uint64_t kByte = 1024;
 constexpr uint64_t mByte = 1024 * 1024;
 constexpr uint64_t gByte = 1024 * 1024 * 1024;
 
-
 /// \brief Read text file
 /// \param[in] path path to file
 std::string LoadTextFile(std::string_view path);
@@ -24,6 +23,6 @@ std::string LoadTextFile(std::string_view path);
 /// @return string with format YYYY-MM-DD-HH:mm:ss
 const std::string CurrentDateTime();
 
-} // namespace utils
+}  // namespace utils
 
-#endif // UTILS_H
+#endif  // UTILS_H

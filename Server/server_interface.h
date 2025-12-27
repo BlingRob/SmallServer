@@ -12,4 +12,4 @@ struct IServer
     virtual void Stop() = 0;
 };
 
-#endif // SERVER_INTERFACE_H
+#endif  // SERVER_INTERFACE_H

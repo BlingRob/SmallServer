@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTP Server Web GUI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: #1976d2; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        button { padding: 10px 20px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1565c0; }
+        button.secondary { background: #666; }
+        .file-list { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f5f5f5; font-weight: bold; }
+        tr:hover { background: #f9f9f9; }
+        .folder { color: #1976d2; }
+        .file { color: #333; }
+        .progress { display: none; margin: 20px 0; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 100px auto; padding: 20px; width: 400px; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .path { margin-bottom: 10px; font-size: 14px; color: #666; }
+        .path span { cursor: pointer; color: #1976d2; }
+        .path span:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📁 FTP Server Web GUI</h1>
+            <p>Manage your FTP server files through this web interface</p>
+        </header>
+        
+        <div class="controls">
+            <button onclick="refreshFiles()">🔄 Refresh</button>
+            <button onclick="showUploadModal()">📤 Upload</button>
+            <button onclick="showCreateFolderModal()">📁 New Folder</button>
+            <button onclick="showRenameModal()" class="secondary">✏️ Rename</button>
+            <button onclick="deleteSelected()" class="secondary">🗑️ Delete</button>
+        </div>
+        
+        <div class="path" id="path"></div>
+        
+        <div class="file-list">
+            <table id="fileTable">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Type</th>
+                        <th>Modified</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="fileList"></tbody>
+            </table>
+        </div>
+        
+        <div class="progress" id="progress">
+            <p>Uploading... <span id="progressPercent">0%</span></p>
+            <progress id="progressBar" value="0" max="100"></progress>
+        </div>
+        
+        <!-- Upload Modal -->
+        <div class="modal" id="uploadModal">
+            <div class="modal-content">
+                <h2>Upload File</h2>
+                <div class="form-group">
+                    <label for="fileInput">Select File:</label>
+                    <input type="file" id="fileInput">
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="uploadFile()">Upload</button>
+                    <button onclick="hideModal('uploadModal')" class="secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Create Folder Modal -->
+        <div class="modal" id="folderModal">
+            <div class="modal-content">
+                <h2>Create New Folder</h2>
+                <div class="form-group">
+                    <label for="folderName">Folder Name:</label>
+                    <input type="text" id="folderName" placeholder="Enter folder name">
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="createFolder()">Create</button>
+                    <button onclick="hideModal('folderModal')" class="secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rename Modal -->
+        <div class="modal" id="renameModal">
+            <div class="modal-content">
+                <h2>Rename</h2>
+                <div class="form-group">
+                    <label for="oldName">Current Name:</label>
+                    <input type="text" id="oldName" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="newName">New Name:</label>
+                    <input type="text" id="newName" placeholder="Enter new name">
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="renameFile()">Rename</button>
+                    <button onclick="hideModal('renameModal')" class="secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentPath = '';
+        let selectedFiles = new Set();
+        
+        function refreshFiles() {
+            fetch('/api/files' + (currentPath ? '?path=' + encodeURIComponent(currentPath) : ''))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+                    currentPath = data.path;
+                    updatePathDisplay();
+                    updateFileList(data.files);
+                })
+                .catch(err => console.error('Error:', err));
+        }
+        function updatePathDisplay() {
+            const pathDiv = document.getElementById('path');
+            const parts = currentPath.split('/').filter(p => p);
+            let html = '<span onclick="navigateTo(\'\')">Root</span>';
+            
+            let accumulatedPath = '';
+            parts.forEach(part => {
+                accumulatedPath += '/' + part;
+                html += ' / <span onclick="navigateTo(\'' + accumulatedPath + '\')">' + part + '</span>';
+            });
+            
+            pathDiv.innerHTML = html;
+        }
+        
+        function navigateTo(path) {
+            currentPath = path;
+            refreshFiles();
+        }
+        
+        function updateFileList(files) {
+            const tbody = document.getElementById('fileList');
+            tbody.innerHTML = '';
+            
+            if (files.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No files</td></tr>';
+                return;
+            }
+            
+            files.forEach(file => {
+                const row = document.createElement('tr');
+                
+                // Checkbox
+                const checkboxCell = document.createElement('td');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = file.name;
+                checkbox.onchange = () => toggleFileSelection(file.name, checkbox.checked);
+                checkboxCell.appendChild(checkbox);
+                
+                // Name with icon
+                const nameCell = document.createElement('td');
+                nameCell.className = file.type === 'directory' ? 'folder' : 'file';
+                nameCell.innerHTML = (file.type === 'directory' ? '📁 ' : '📄 ') + file.name;
+                nameCell.style.cursor = 'pointer';
+                nameCell.onclick = () => {
+                    if (file.type === 'directory') {
+                        navigateTo(currentPath + '/' + file.name);
+                    } else {
+                        downloadFile(file.name);
+                    }
+                };
+                
+                // Size
+                const sizeCell = document.createElement('td');
+                sizeCell.textContent = file.type === 'directory' ? '-' : formatSize(file.size);
+                
+                // Type
+                const typeCell = document.createElement('td');
+                typeCell.textContent = file.type === 'directory' ? 'Folder' : 'File';
+                
+                // Modified
+                const modifiedCell = document.createElement('td');
+                modifiedCell.textContent = new Date(file.modified * 1000).toLocaleString();
+                
+                // Actions
+                const actionsCell = document.createElement('td');
+                actionsCell.innerHTML = `
+                    <button onclick="event.stopPropagation(); downloadFile('${file.name}')" ${file.type === 'directory' ? 'disabled' : ''}>
+                        📥
+                    </button>
+                    <button onclick="event.stopPropagation(); showRenameSingle('${file.name}')">
+                        ✏️
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteSingle('${file.name}')">
+                        🗑️
+                    </button>
+                `;
+                
+                row.appendChild(checkboxCell);
+                row.appendChild(nameCell);
+                row.appendChild(sizeCell);
+                row.appendChild(typeCell);
+                row.appendChild(modifiedCell);
+                row.appendChild(actionsCell);
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function toggleFileSelection(filename, checked) {
+            if (checked) {
+                selectedFiles.add(filename);
+            } else {
+                selectedFiles.delete(filename);
+            }
+            document.getElementById('selectAll').checked = selectedFiles.size > 0;
+        }
+        
+        function selectAll(checked) {
+            const checkboxes = document.querySelectorAll('#fileList input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = checked;
+                toggleFileSelection(cb.value, checked);
+            });
+        }
+        
+        function showUploadModal() {
+            document.getElementById('uploadModal').style.display = 'block';
+        }
+        
+        function showCreateFolderModal() {
+            document.getElementById('folderName').value = '';
+            document.getElementById('folderModal').style.display = 'block';
+        }
+        
+        function showRenameModal() {
+            if (selectedFiles.size !== 1) {
+                alert('Please select exactly one file/folder to rename');
+                return;
+            }
+            const oldName = Array.from(selectedFiles)[0];
+            document.getElementById('oldName').value = oldName;
+            document.getElementById('newName').value = oldName;
+            document.getElementById('renameModal').style.display = 'block';
+        }
+        
+        function showRenameSingle(filename) {
+            selectedFiles.clear();
+            selectedFiles.add(filename);
+            showRenameModal();
+        }
+        
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                alert('Please select a file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('path', currentPath);
+            
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    alert('Upload successful!');
+                    hideModal('uploadModal');
+                    refreshFiles();
+                }
+            })
+            .catch(err => {
+                alert('Upload failed: ' + err);
+            });
+        }
+        
+        function createFolder() {
+            const folderName = document.getElementById('folderName').value.trim();
+            if (!folderName) {
+                alert('Please enter folder name');
+                return;
+            }
+            
+            fetch('/api/mkdir?path=' + encodeURIComponent(currentPath) + '&name=' + encodeURIComponent(folderName))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        alert('Folder created!');
+                        hideModal('folderModal');
+                        refreshFiles();
+                    }
+                });
+        }
+        
+        function renameFile() {
+            const oldName = document.getElementById('oldName').value;
+            const newName = document.getElementById('newName').value.trim();
+            
+            if (!newName) {
+                alert('Please enter new name');
+                return;
+            }
+            
+            fetch('/api/rename?path=' + encodeURIComponent(currentPath) + 
+                  '&old=' + encodeURIComponent(oldName) + 
+                  '&new=' + encodeURIComponent(newName))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        alert('Renamed successfully!');
+                        hideModal('renameModal');
+                        refreshFiles();
+                    }
+                });
+        }
+        
+        function deleteSelected() {
+            if (selectedFiles.size === 0) {
+                alert('Please select files to delete');
+                return;
+            }
+            
+            if (!confirm('Delete ' + selectedFiles.size + ' item(s)?')) {
+                return;
+            }
+            
+            selectedFiles.forEach(filename => {
+                const filepath = (currentPath ? currentPath + '/' : '') + filename;
+                fetch('/api/delete/' + encodeURIComponent(filepath), { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Delete error:', data.error);
+                        }
+                    });
+            });
+            
+            setTimeout(() => {
+                selectedFiles.clear();
+                refreshFiles();
+                alert('Deletion completed');
+            }, 1000);
+        }
+        
+        function deleteSingle(filename) {
+            if (!confirm('Delete ' + filename + '?')) {
+                return;
+            }
+            
+            const filepath = (currentPath ? currentPath + '/' : '') + filename;
+            fetch('/api/delete/' + encodeURIComponent(filepath), { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        alert('Deleted successfully!');
+                        refreshFiles();
+                    }
+                });
+        }
+        
+        function downloadFile(filename) {
+            const filepath = (currentPath ? currentPath + '/' : '') + filename;
+            window.open('/api/download/' + encodeURIComponent(filepath), '_blank');
+        }
+        
+        // Initialize
+        document.getElementById('selectAll').onchange = (e) => selectAll(e.target.checked);
+        window.onclick = (e) => {
+            if (e.target.className === 'modal') {
+                e.target.style.display = 'none';
+            }
+        };
+        
+        refreshFiles();
+    </script>
+</body>
+</html>

@@ -23,6 +23,7 @@ class BoostLogger : public ILogger
     BoostLogger(const std::string& logFilePath = "");
 
     void SetSeverities(Severities sev) override;
+    
     void Log(std::string_view msg, Severities sev) override;
 
     private:

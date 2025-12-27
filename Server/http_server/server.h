@@ -1,29 +1,20 @@
 #pragma once
 
-#include <server_parameters.h>
-#include <server_interface.h>
-#include <base_tcp_server/base_tcp_server.hpp>
-#include <logger_subsystem/logger_interface.h>
-
-#include <boost/beast/http.hpp>
 #include <boost/beast/core.hpp>
-
+#include <boost/beast/http.hpp>
 #include <string>
+#include <toml.hpp>
 
-class HttpServer : public BaseTCPServer
+#include "base_http_server/server.h"
+#include "logger_subsystem/logger_interface.h"
+#include "server_interface.h"
+
+class SimpleHttpServer : public BaseHttpServer
 {
-	public:
-		HttpServer(boost::asio::io_context& ioc, const ServerParameters& parameters, ILogger& logger);
+   public:
+    SimpleHttpServer(boost::asio::io_context& ioc, const toml::table& cfg, ILogger& logger);
 
-	private:
-		
-		std::string user_handler(std::string request) override;
-
-		boost::beast::http::request<boost::beast::http::string_body> string_to_request(std::string request);
-
-		std::string response_to_string(const boost::beast::http::response<boost::beast::http::string_body>& res) const;
-	
-	private:
-
-		ServerParameters server_parameters_;
+   private:
+    boost::beast::http::response<boost::beast::http::string_body> http_request_handler(
+        boost::beast::http::request<boost::beast::http::string_body>) override;
 };

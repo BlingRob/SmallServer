@@ -3,9 +3,10 @@
 
 #include "utils.h"
 
-#include <fstream>
-#include <format>
 #include <time.h>
+
+#include <format>
+#include <fstream>
 
 namespace utils
 {
@@ -17,13 +18,13 @@ std::string LoadTextFile(std::string_view path)
     file.exceptions(std::ifstream::failbit);
 
     try
-        {
-            file.open(path.data(), std::ios::binary | std::ios::ate);
-        }
+    {
+        file.open(path.data(), std::ios::binary | std::ios::ate);
+    }
     catch (const std::exception& exc)
-        {
-            throw(std::format("{}\nFile: {} doesn't exist!", exc.what(), path));
-        }
+    {
+        throw(std::format("{}\nFile: {} doesn't exist!", exc.what(), path));
+    }
 
     if (!file.is_open())
         throw("File isn't opened!");
@@ -36,11 +37,11 @@ std::string LoadTextFile(std::string_view path)
     return text;
 }
 
-const std::string CurrentDateTime() 
+const std::string CurrentDateTime()
 {
-    time_t     now = time(0);
-    struct tm  tstruct;
-    char       buf[80];
+    time_t now = time(0);
+    struct tm tstruct;
+    char buf[80];
     tstruct = *localtime(&now);
     // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
     // for more information about date/time format
@@ -55,4 +56,4 @@ const std::string CurrentDateTime()
 //     return std::vformat(rt_fmt_str, std::make_format_args(args...));
 // }
 
-} // namespace utils
+}  // namespace utils

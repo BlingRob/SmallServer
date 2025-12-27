@@ -1,0 +1,20 @@
+Language:        Cpp
+BasedOnStyle:    Google
+IndentWidth:     4
+TabWidth:        4
+UseTab:          Never
+BreakBeforeBraces: Allman  # Отдельные фигурные скобки — удобно в играх
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: true
+ColumnLimit:     120
+BinPackArguments: false
+BinPackParameters: false
+SpaceBeforeParens: ControlStatements
+Cpp11BracedListStyle: true
+# Standard:        Cpp17
+SortIncludes:    CaseSensitive
+IncludeBlocks:   Regroup
+PointerAlignment: Left
+AlignTrailingComments: true
+SpacesInAngles:  false
+SpaceAfterCStyleCast: true

@@ -1,0 +1,13 @@
+[logging]
+filename = "application.log"
+log_dir = "./Logs"
+
+[connections]
+host = "127.0.0.1"
+http_port = 15000
+ftp_port = 15001
+# console = true
+
+[work_dirs]
+ftp = ./
+http = ./
